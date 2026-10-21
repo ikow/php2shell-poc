@@ -1,0 +1,35 @@
+services:
+  # Vulnerable PHP (pre-patch) — Chain A / Chain C / CVE early-decode path
+  php:
+    image: php:8.2.34-fpm
+    container_name: php2shell-lab
+    ports: ["9000:9000"]
+    volumes:
+      - ../webroot:/var/www/html
+      - ./php.ini:/usr/local/etc/php/php.ini
+    security_opt: [seccomp:unconfined]
+    privileged: true
+    command: >
+      bash -c "mkdir -p /tmp/sessions && chmod 1777 /tmp/sessions && php-fpm"
+
+  # Patched PHP (8.2.35+, incomplete_classes_only fix) — differential control
+  php-patched:
+    image: php:8.2.35-fpm
+    container_name: php2shell-patched
+    ports: ["9001:9000"]
+    volumes:
+      - ../webroot:/var/www/html
+      - ./php.ini:/usr/local/etc/php/php.ini
+    security_opt: [seccomp:unconfined]
+    privileged: true
+    command: >
+      bash -c "mkdir -p /tmp/sessions && chmod 1777 /tmp/sessions && php-fpm"
+
+  nginx:
+    image: nginx:alpine
+    container_name: php2shell-nginx
+    ports: ["18080:80", "18081:81"]
+    volumes:
+      - ../webroot:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on: [php, php-patched]

@@ -26,9 +26,24 @@ EOF
 echo "session.serialize_handler = php_serialize" > webroot/app/.user.ini
 cp webroot/nosession.php webroot/app/upload.php
 
-# Directory with php handler
-echo "session.serialize_handler = php" > webroot/api/.user.ini
-cp webroot/nosession.php webroot/api/endpoint.php
+# Directory with php handler.
+# endpoint.php MUST call session_start(): the php handler only decodes the
+# session file when a script starts a session. The original lab shipped a
+# nosession.php copy here, so the mismatch chain could never fire.
+# The Pwn gadget class stands in for an application-defined POP gadget.
+cat > webroot/api/endpoint.php << 'EOF'
+<?php
+class Pwn {
+    public $cmd = 'id';
+    public function __destruct() {
+        file_put_contents('/tmp/pwned_marker', 'DESTRUCT cmd=' . $this->cmd . ' pid=' . getmypid() . "\n", FILE_APPEND);
+        system($this->cmd);
+    }
+}
+session_start();
+var_dump($_SESSION);
+echo "READ_DONE\n";
+EOF
 
 # LFI simulation (for Chain 1 verification)
 cat > webroot/vuln.php << 'EOF'
@@ -82,7 +97,10 @@ EOF
 cat > docker-compose.yml << 'EOF'
 services:
   php:
-    image: php:8.2-fpm
+    # Pin the vulnerable build: php:8.2-fpm now resolves to 8.2.35+, which
+    # contains the CVE-2026-109618 fix (incomplete_classes_only in the
+    # rfc1867 upload-progress update path) and breaks every chain below.
+    image: php:8.2.34-fpm
     container_name: php2shell-lab
     ports: ["9000:9000"]
     volumes:
