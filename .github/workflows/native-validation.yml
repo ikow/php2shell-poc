@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   engines:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -54,7 +54,7 @@ jobs:
           category: php2shell-rule-regressions
 
   php-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

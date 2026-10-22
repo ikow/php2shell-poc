@@ -64,6 +64,10 @@ Remote CI status is verified after pushing when GitHub provides a run. Optional
 GitHub Security upload requires code scanning and `P2S_UPLOAD_SARIF=true`.
 The SARIF exporter and schema validation do not depend on that setting.
 
+The first remote run passed Python 3.11/3.13 but could not install Python 3.9 on
+the floating Ubuntu 26.04 runner. Workflows now pin Ubuntu 24.04 so the advertised
+Python 3.9 compatibility job uses a supported setup-python platform.
+
 Supported PCAP input is bounded classic Ethernet PCAP. No live-network replay,
 TLS decryption, pcapng support, Apache/nginx blocking connector tests, universal
 SIEM backend compatibility, or PHP exploitation tests are claimed. OpenResty
