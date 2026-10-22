@@ -44,14 +44,23 @@ jobs:
           path: artifacts/native/
           if-no-files-found: error
       - name: Upload regressions to GitHub code scanning
+        id: sarif-upload
         if: >-
           always() && github.event_name == 'push' &&
-          vars.P2S_UPLOAD_SARIF == 'true' &&
+          vars.P2S_UPLOAD_SARIF != 'false' &&
           hashFiles('artifacts/native/native.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: artifacts/native/native.sarif
           category: php2shell-rule-regressions
+          wait-for-processing: true
+      - name: Record processed GitHub Security upload
+        if: steps.sarif-upload.outcome == 'success'
+        env:
+          SARIF_ID: ${{ steps.sarif-upload.outputs.sarif-id }}
+        run: |
+          test -n "$SARIF_ID"
+          printf 'GitHub processed SARIF upload `%s` for commit `%s`.\n' "$SARIF_ID" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
 
   php-matrix:
     runs-on: ubuntu-24.04
