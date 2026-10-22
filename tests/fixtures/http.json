@@ -1,0 +1,146 @@
+[
+  {
+    "id": "progress-marker",
+    "description": "Synthetic upload progress marker, no executable payload",
+    "request": "POST /upload.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: multipart/form-data; boundary=sample\r\nContent-Length: 100\r\n\r\n--sample\r\nContent-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"\r\n\r\nsample\r\n--sample--\r\n",
+    "malicious": true,
+    "expected": {
+      "upload_progress": true,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "session-field",
+    "description": "Synthetic session field",
+    "request": "POST /upload.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: multipart/form-data; boundary=sample\r\nContent-Length: 84\r\n\r\n--sample\r\nContent-Disposition: form-data; name=\"PHPSESSID\"\r\n\r\nredacted\r\n--sample--\r\n",
+    "malicious": true,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": true,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "filename-marker",
+    "description": "Inert PHP opening marker in filename",
+    "request": "POST /upload.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: multipart/form-data; boundary=sample\r\nContent-Length: 106\r\n\r\n--sample\r\nContent-Disposition: form-data; name=\"file\"; filename=\"<?php-marker.txt\"\r\n\r\nsample\r\n--sample--\r\n",
+    "malicious": true,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": true,
+      "session_path": false
+    }
+  },
+  {
+    "id": "session-path",
+    "description": "Synthetic local session path reference",
+    "request": "GET /index.php?page=/tmp/sess_example HTTP/1.1\r\nHost: example.test\r\n\r\n",
+    "malicious": true,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": true
+    }
+  },
+  {
+    "id": "mixed-case-progress",
+    "description": "Case-insensitive indicator regression",
+    "request": "POST /upload.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: multipart/form-data; boundary=sample\r\nContent-Length: 100\r\n\r\n--sample\r\nContent-Disposition: form-data; name=\"php_session_upload_progress\"\r\n\r\nsample\r\n--sample--\r\n",
+    "malicious": true,
+    "expected": {
+      "upload_progress": true,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "combined-markers",
+    "description": "Multiple indicators count as one traffic detection",
+    "request": "POST /upload.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: multipart/form-data; boundary=sample\r\nContent-Length: 173\r\n\r\n--sample\r\nContent-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_PROGRESS\"\r\n\r\nsample\r\n--sample\r\nContent-Disposition: form-data; name=\"PHPSESSID\"\r\n\r\nsynthetic\r\n--sample--\r\n",
+    "malicious": true,
+    "expected": {
+      "upload_progress": true,
+      "session_in_form": true,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "home",
+    "description": "Ordinary PHP page",
+    "request": "GET /index.php HTTP/1.1\r\nHost: example.test\r\n\r\n",
+    "malicious": false,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "session-cookie",
+    "description": "Normal session cookie must not match form indicator",
+    "request": "GET /index.php HTTP/1.1\r\nHost: example.test\r\nCookie: PHPSESSID=synthetic\r\n\r\n",
+    "malicious": false,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "ordinary-upload",
+    "description": "Ordinary file upload",
+    "request": "POST /upload.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: multipart/form-data; boundary=sample\r\nContent-Length: 100\r\n\r\n--sample\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo.txt\"\r\n\r\nexample\r\n--sample--\r\n",
+    "malicious": false,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "login",
+    "description": "Ordinary URL-encoded form with synthetic values",
+    "request": "POST /login.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 25\r\n\r\nuser=example&action=login",
+    "malicious": false,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "json-api",
+    "description": "Ordinary JSON POST",
+    "request": "POST /api.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: application/json\r\nContent-Length: 19\r\n\r\n{\"message\":\"hello\"}",
+    "malicious": false,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  },
+  {
+    "id": "near-markers",
+    "description": "Similar field and filename names",
+    "request": "POST /upload.php HTTP/1.1\r\nHost: example.test\r\nContent-Type: multipart/form-data; boundary=sample\r\nContent-Length: 198\r\n\r\n--sample\r\nContent-Disposition: form-data; name=\"PHP_SESSION_UPLOAD_STATUS\"\r\n\r\nsample\r\n--sample\r\nContent-Disposition: form-data; name=\"PHPSESSID_BACKUP\"; filename=\"report.php\"\r\n\r\nsample\r\n--sample--\r\n",
+    "malicious": false,
+    "expected": {
+      "upload_progress": false,
+      "session_in_form": false,
+      "php_filename": false,
+      "session_path": false
+    }
+  }
+]

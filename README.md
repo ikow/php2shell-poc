@@ -87,6 +87,22 @@ Pre-built IDS / WAF / SIEM rules in [`detection/`](detection/):
 
 ## Quick Start
 
+### Offline detection validation
+
+An offline regression framework measures four synthetic HTTP indicators with
+TP/FP/FN/TN counts, coverage, and JSON/Markdown reports. It does not execute the
+Suricata, ModSecurity, or Sigma rules. No lab or network access is required.
+
+```bash
+python3 -B -m unittest discover -v
+python3 -B tools/validate_detection.py --require-coverage
+```
+
+See [coverage and usage](docs/detection-coverage.md) and the
+[engineering plan](docs/engineering/implementation-plan.md) for scope and limitations.
+
+### Vulnerable research lab
+
 ```bash
 git clone https://github.com/ikow/php2shell-poc.git && cd php2shell-poc
 

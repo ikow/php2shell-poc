@@ -1,5 +1,9 @@
 # Detection Validation Framework — implementation plan
 
+> This is the initial proposal. See the [engineering implementation plan](engineering/implementation-plan.md)
+> for the reviewed architecture and acceptance criteria, and [coverage documentation](detection-coverage.md)
+> for delivered P0 behavior. Native engine validation and static rule linting remain pending.
+
 ## Goal
 Add an offline, deterministic, non-exploit regression suite for PHP2Shell detection rules. Validate malicious-looking fixtures and benign traffic without targeting third-party services. Preserve the existing proof-of-concept as a separate, opt-in lab.
 

@@ -1,0 +1,42 @@
+name: Offline detection validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.11', '3.13']
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Unit and CLI regression tests
+        run: python -B -m unittest discover -v
+      - name: Generate JSON report and enforce coverage
+        run: python -B tools/validate_detection.py --require-coverage --output detection-report.json
+      - name: Generate Markdown report and enforce coverage
+        if: always()
+        run: python -B tools/validate_detection.py --require-coverage --format markdown --output detection-report.md
+      - name: Save validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detection-reports-python-${{ matrix.python-version }}
+          path: |
+            detection-report.json
+            detection-report.md
+          if-no-files-found: error
+          retention-days: 14
