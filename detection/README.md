@@ -6,7 +6,7 @@ Detection and blocking rules for CVE-2026-109618 / CVE-2026-109619.
 
 | File | Format | Use Case |
 |------|--------|----------|
-| `php2shell.rules` | Suricata / Snort | Network IDS — 13 rules covering request-side, response-side, and recon |
+| `php2shell.rules` | Suricata / Snort | Network IDS — 12 rules covering request-side, response-side, and recon |
 | `php2shell.yaml` | Sigma | SIEM log detection — web server logs and host-level process/file events |
 | `modsecurity.conf` | ModSecurity v2/v3 | WAF — drop-in rules for Apache/Nginx with ModSecurity |
 | `php2shell.lua` | OpenResty / Nginx Lua | Reverse proxy — lightweight Lua module for OpenResty |
@@ -69,3 +69,12 @@ access_by_lua_block {
 - [Sansec research](https://sansec.io/research/php2shell) — PHPSESSID memory leak discovery
 - [Cloudflare WAF blog](https://blog.cloudflare.com/php-vulnerabilities-waf-protection/) — full transaction detection approach
 - [Corelight detection](https://github.com/corelight/php2shell-detect) — Zeek + Suricata community rules
+
+## Automated validation
+
+Run `python3 -B -m tools.run_native --build --with-crs` from the repository root.
+This executes all 24 Suricata/ModSecurity/Sigma rule IDs with positive and negative
+fixtures, using the actual engines and pySigma-to-SQLite conversion. Reports
+include known traffic false positives and coverage gaps. See the
+[native validation guide](../docs/native-validation.md) for exact versions,
+report formats, PCAP analysis, Sigma event-field mappings and limitations.

@@ -1,4 +1,7 @@
-# Offline detection coverage
+# P0 offline indicator coverage
+
+Native engine adapters, PCAP input, PHP matrix, CRS and SARIF are now available:
+see [native validation](native-validation.md). This page describes the retained P0 backend.
 
 ## Run locally
 
@@ -63,7 +66,7 @@ retained rather than hidden by relabeling fixtures or suppressing failures.
 
 | Indicator | Positive fixtures | Benign regression examples | Related source rules (not executed) |
 | --- | --- | --- | --- |
-| upload_progress | progress-marker, mixed-case-progress, combined-markers | ordinary-upload, near-markers | Suricata 2026100; ModSecurity 9900100; Sigma suffix 001 |
+| upload_progress | progress-marker, mixed-case-progress, combined-markers | ordinary-upload, near-markers | Suricata 2026100; ModSecurity 9900100; Sigma 80bfee4a-5d2e-54b7-9278-eda06feebeb0 |
 | session_in_form | session-field, combined-markers | session-cookie, near-markers | Suricata 2026101; ModSecurity 9900101 |
 | php_filename | filename-marker | ordinary-upload, near-markers | Suricata 2026102; ModSecurity 9900102 |
 | session_path | session-path | home, login, json-api | Suricata 2026106 |
@@ -74,25 +77,29 @@ recognizes `filename="<?php` while native rules use different constraints and
 parsing. Substrings in unrelated headers/bodies can trigger alarms, and encoding,
 whitespace and alternate quoting can evade them. No native rule syntax is linted.
 
-## Native rule inventory: all untested
+## Native rule inventory
 
-| Source | Rule IDs | Required future evidence |
+These sources are now covered by the separate native suite. The P0 indicator
+backend still does not execute them. OpenResty remains outside the requested adapters.
+
+| Source | Rule IDs | Native suite evidence |
 | --- | --- | --- |
 | Suricata request | 2026100–2026106 | Native rule load, TCP/HTTP parsing, positive/negative PCAPs |
 | Suricata response | 2026110–2026112 | HTTP responses and native EVE alerts |
 | Suricata recon/inventory | 2026115, 2026116 | Threshold/time series and response headers |
 | ModSecurity request | 9900100–9900103, 9900106 | Parsed transactions, configuration, audit logs and actions |
 | ModSecurity response | 9900104, 9900105 | Enabled response inspection and phase-4 logs |
-| Sigma | IDs ending php2shell001–php2shell005 | Schema validation, backend conversion, web/process/file/application log fixtures |
-| OpenResty | check() checks 1–3 | Isolated nginx/OpenResty runtime and request handling |
+| Sigma | 5 valid UUIDs in detection/php2shell.yaml | Schema validation, backend conversion, web/process/file/application log fixtures |
+| OpenResty | check() checks 1–3 | Not part of the native suite |
 
 There are 12 Suricata `alert` declarations in the source despite README wording
-of 13. Sigma identifiers and unused selections need native schema/conversion
-review. Source rules remain unchanged for a separate, evidence-backed P1 review.
+of 13. Sigma identifiers and unused selections were corrected after official pySigma
+validation. Native tests also justified specific Suricata and ModSecurity fixes;
+see the native guide for their evidence.
 
-## Deferred work
+## Scope boundaries
 
-Native engines and isolated Docker tests (P1), SARIF and native per-rule coverage
-(P2), PCAP import/replay, response fixtures, PHP version comparisons, and OWASP CRS
-integration are pending. GitHub Actions runs the offline suite on Python 3.9,
-3.11 and 3.13 and uploads reports; a remote CI run is not implied by local tests.
+The native guide documents delivered engine execution, JSON/Markdown/HTML/SARIF,
+PCAP input, PHP comparisons and CRS coexistence. Neither backend claims production
+false-positive estimates, universal engine/connector compatibility, or proof of
+PHP exploitability from benign configuration probes.

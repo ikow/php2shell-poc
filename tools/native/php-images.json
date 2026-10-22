@@ -1,0 +1,10 @@
+{
+  "8.2": "php:8.2-cli-alpine@sha256:8854cc5e636820f38267855e97d0825659bc6acaf0891aa9701ec7e5c9ecc165",
+  "8.2.34": "php:8.2.34-cli-alpine@sha256:0814a91662f32e59ba3092a443ebb4b9915f3320b1b4688650dfc38939c6ff59",
+  "8.3": "php:8.3-cli-alpine@sha256:25bcb4f1ce4f13651c0f89a6a2db2b14ac5a75555d3553fa03c83dff6d6966a8",
+  "8.3.35": "php:8.3.35-cli-alpine@sha256:8dbeb51c352cf1f70d5d50f3642c9fbed311e914475ea2382f5bc1525bef7bb3",
+  "8.4": "php:8.4-cli-alpine@sha256:0004512c1cc297759ca0769fdf82c9ffeebd9d4b3f66dcbade54713c3e78bfbe",
+  "8.4.26": "php:8.4.26-cli-alpine@sha256:37c8c64177612b72e7f9d2c00481739c166a3708bea27c1cfd27fea1291d82d1",
+  "8.5": "php:8.5-cli-alpine@sha256:d386a12bad6b5dbee1f7dbd0291a4526dbfcbe5cfc0e8833de8d8309be8f3e50",
+  "8.5.11": "php:8.5.11-cli-alpine@sha256:93684051146ec037620855feb77f278090bde45ddc030801cd3f2a7685bc4deb"
+}

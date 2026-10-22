@@ -1,0 +1,23 @@
+# Fully pinned native Sigma/report dependencies; Python 3.11+.
+attrs==26.1.0
+certifi==2026.10.19
+charset-normalizer==3.5.2
+diskcache==5.6.3
+diskcache-stubs==5.6.3.6.20240818
+idna==3.20
+jinja2==3.1.6
+jq==1.13.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+markupsafe==3.0.4
+packaging==26.3
+pyparsing==3.3.3
+pysigma==1.5.1
+pysigma-backend-sqlite==1.2.4
+pyyaml==6.0.3
+referencing==0.37.0
+requests==2.34.2
+rpds-py==2026.9.1
+types-pyyaml==6.0.12.20260906
+typing-extensions==4.16.0
+urllib3==2.8.0

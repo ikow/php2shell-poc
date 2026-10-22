@@ -11,7 +11,7 @@
 
 ---
 title: php2shell Exploitation Attempt via Upload Progress
-id: a1f2e3d4-5678-9abc-def0-php2shell001
+id: 80bfee4a-5d2e-54b7-9278-eda06feebeb0
 status: experimental
 description: >
   Detects HTTP POST requests to PHP endpoints containing
@@ -31,7 +31,7 @@ detection:
     cs-method: POST
     cs-uri|endswith: '.php'
   keywords:
-    - 'PHP_SESSION_UPLOAD_PROGRESS'
+    RequestBody|contains: 'PHP_SESSION_UPLOAD_PROGRESS'
   condition: selection and keywords
 level: high
 falsepositives:
@@ -44,7 +44,7 @@ tags:
 
 ---
 title: php2shell OOM Exploitation via Oversized Multipart POST
-id: a1f2e3d4-5678-9abc-def0-php2shell002
+id: 2136d352-c4e8-5a27-94c2-bab7bc2de435
 status: experimental
 description: >
   Detects large multipart POST requests to PHP endpoints that result in
@@ -78,7 +78,7 @@ tags:
 
 ---
 title: php2shell Post-Exploitation — Shell Spawned by PHP Process
-id: a1f2e3d4-5678-9abc-def0-php2shell003
+id: 3b1f6ae8-5735-5684-a2a4-aa9090331a77
 status: experimental
 description: >
   Detects a shell or scripting interpreter spawned as a child of a PHP
@@ -124,7 +124,7 @@ tags:
 
 ---
 title: php2shell Session File Poisoning
-id: a1f2e3d4-5678-9abc-def0-php2shell004
+id: 16a5ccb1-e921-58f2-b5f9-f36b15656dd9
 status: experimental
 description: >
   Detects PHP code written into session files on disk. The session injection
@@ -142,15 +142,14 @@ detection:
     TargetFilename|contains:
       - '/sessions/sess_'
       - '/php/sessions/sess_'
-  selection_content:
-    TargetFilename|endswith: '.php'  # false trigger guard
   keywords_in_file:
-    - '<?php'
-    - 'system('
-    - 'eval('
-    - 'exec('
-    - 'passthru('
-    - 'shell_exec('
+    Content|contains:
+      - '<\?php'
+      - 'system('
+      - 'eval('
+      - 'exec('
+      - 'passthru('
+      - 'shell_exec('
   condition: selection_path and keywords_in_file
 level: critical
 falsepositives:
@@ -162,7 +161,7 @@ tags:
 
 ---
 title: php2shell PHP OOM Fatal Error in Logs
-id: a1f2e3d4-5678-9abc-def0-php2shell005
+id: 005a046d-3142-5e7d-a098-f3fe110f3eb7
 status: experimental
 description: >
   Detects PHP out-of-memory fatal errors in application or error logs.
@@ -177,10 +176,9 @@ logsource:
   category: application
 detection:
   keywords:
-    - 'Allowed memory size'
-    - 'exhausted'
-  filter_context:
-    - 'in Unknown on line 0'  # OOM during SAPI multipart parsing, not user code
+    Message|contains|all:
+      - 'Allowed memory size'
+      - 'exhausted'
   condition: keywords
 level: medium
 falsepositives:

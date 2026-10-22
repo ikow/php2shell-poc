@@ -78,9 +78,9 @@ alert http $EXTERNAL_NET any -> $HOME_NET any ( \
     flow:established,to_server; \
     http.method; content:"POST"; \
     http.content_type; content:"multipart/form-data"; \
-    http.request_body; content:"filename=|22|"; content:"|7c|O:|22|"; distance:0; within:200; \
+    http.request_body; content:"filename=|22|"; content:"|7c|O:"; distance:0; within:200; \
     classtype:web-application-attack; \
-    sid:2026103; rev:1; \
+    sid:2026103; rev:2; \
     metadata:cve CVE-2026-109619, \
              created_at 2026_10_21, updated_at 2026_10_21; \
     reference:cve,2026-109619; \
@@ -96,10 +96,10 @@ alert http $EXTERNAL_NET any -> $HOME_NET any ( \
     http.method; content:"POST"; \
     http.content_type; content:"multipart/form-data"; \
     http.request_body; content:"PHP_SESSION_UPLOAD_PROGRESS"; \
-    http.request_body; content:"filename=|22|"; \
-    isdataat:10000,relative; \
+    content:"filename=|22|"; \
+    pcre:"/filename=\x22[^\x22\r\n]{10000,}\x22/"; \
     classtype:web-application-attack; \
-    sid:2026104; rev:1; \
+    sid:2026104; rev:2; \
     metadata:cve CVE-2026-109619, \
              created_at 2026_10_21, updated_at 2026_10_21; \
     reference:cve,2026-109619; \
@@ -129,7 +129,7 @@ alert http $EXTERNAL_NET any -> $HOME_NET any ( \
     msg:"PHP2SHELL session file path in URL (LFI exploitation)"; \
     flow:established,to_server; \
     http.uri; content:"/sess_"; \
-    http.uri; pcre:"/(?:\/tmp\/sessions|\/var\/lib\/php\/sessions?)\/sess_/i"; \
+    pcre:"/(?:\/tmp\/sessions|\/var\/lib\/php\/sessions?)\/sess_/i"; \
     classtype:web-application-attack; \
     sid:2026106; rev:1; \
     metadata:cve CVE-2026-109618, \
@@ -179,10 +179,10 @@ alert http $HOME_NET any -> $EXTERNAL_NET any ( \
 alert http $HOME_NET any -> $EXTERNAL_NET any ( \
     msg:"PHP2SHELL anomalous PHPSESSID in response (heap memory leak)"; \
     flow:established,to_client; \
-    http.header; content:"Set-Cookie"; content:"PHPSESSID="; \
-    pcre:"/Set-Cookie:\s*PHPSESSID=[a-zA-Z0-9,-]{64,}/"; \
+    http.cookie; content:"PHPSESSID="; \
+    pcre:"/PHPSESSID=[a-zA-Z0-9,-]{64,}/"; \
     classtype:web-application-attack; \
-    sid:2026112; rev:1; \
+    sid:2026112; rev:2; \
     metadata:cve CVE-2026-109618, \
              created_at 2026_10_21, updated_at 2026_10_21; \
     reference:cve,2026-109618; \
@@ -204,10 +204,10 @@ alert http $EXTERNAL_NET any -> $HOME_NET any ( \
     http.method; content:"POST"; \
     http.content_type; content:"multipart/form-data"; \
     http.request_body; content:"PHP_SESSION_UPLOAD_PROGRESS"; \
-    dsize:<2000; \
+    bsize:<2000; \
     threshold:type both, track by_src, count 3, seconds 60; \
     classtype:web-application-activity; \
-    sid:2026115; rev:1; \
+    sid:2026115; rev:2; \
     metadata:cve CVE-2026-109618, cve CVE-2026-109619, \
              created_at 2026_10_21, updated_at 2026_10_21; \
     reference:cve,2026-109618; \

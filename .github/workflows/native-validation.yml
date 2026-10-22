@@ -1,0 +1,80 @@
+name: Native detection engines
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  engines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned validation environment
+        run: docker build -f tools/native/Dockerfile -t php2shell-validation:ci .
+      - name: Unit, native engine, CRS, PCAP and SARIF schema tests
+        run: >-
+          docker run --rm --network none --read-only --cap-drop ALL
+          --security-opt no-new-privileges --pids-limit 128 --memory 512m --cpus 2
+          --tmpfs /tmp:rw,noexec,nosuid,size=128m -e P2S_NATIVE=1
+          -v "$PWD:/work:ro" --entrypoint python php2shell-validation:ci
+          -B -m unittest discover -v
+      - name: Generate native reports and enforce rule coverage
+        if: always()
+        run: |
+          mkdir -p artifacts
+          chmod 0777 artifacts
+          docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --pids-limit 128 --memory 512m --cpus 2 \
+            --tmpfs /tmp:rw,noexec,nosuid,size=128m \
+            -v "$PWD:/work:ro" -v "$PWD/artifacts:/reports" \
+            php2shell-validation:ci --with-crs --output-dir /reports/native
+      - name: Upload native reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-detection-reports
+          path: artifacts/native/
+          if-no-files-found: error
+      - name: Upload regressions to GitHub code scanning
+        if: >-
+          always() && github.event_name == 'push' &&
+          vars.P2S_UPLOAD_SARIF == 'true' &&
+          hashFiles('artifacts/native/native.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: artifacts/native/native.sarif
+          category: php2shell-rule-regressions
+
+  php-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pull digest-pinned PHP images
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          for image in json.loads(Path('tools/native/php-images.json').read_text()).values():
+              subprocess.run(['docker', 'pull', image], check=True, timeout=120)
+          PY
+      - name: Compare session configuration and benign serializer behavior
+        run: python -B -m tools.php_version_matrix
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: php-version-matrix
+          path: artifacts/php/
+          if-no-files-found: error

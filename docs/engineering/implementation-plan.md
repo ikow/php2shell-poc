@@ -43,14 +43,15 @@ and add a tested validation/reporting layer without claiming engine execution.
    codes, unit and subprocess regression tests, fixture corpus, English usage
    documentation, and GitHub Actions across supported Python versions. Require
    positive and negative labels for every indicator in the default CI gate.
-4. **P1 adapters (deferred):** native Suricata syntax and PCAP tests; ModSecurity
-   transactions and audit logs; Sigma schema/conversion and representative log
+4. **P1 adapters (implemented):** native Suricata syntax and PCAP tests; ModSecurity
+   transactions and native server-log callbacks; Sigma schema/conversion and representative log
    events. Use pinned, unprivileged Docker environments, internal networks,
    read-only rules, resource limits, timeouts, and no production targets. Native
    adapters must return actual engine rule IDs and execution status.
-5. **P2 (deferred except basic JSON/Markdown):** SARIF semantics, native rule
-   coverage matrix, HTML, and SIEM integrations. Later: PCAP ingestion, PHP
-   version matrix, and OWASP CRS compatibility.
+5. **P2 (implemented):** SARIF semantics, native rule
+   coverage matrix, HTML, and optional GitHub code-scanning upload. Offline PCAP input, a
+   benign PHP configuration/advisory-version matrix, and OWASP CRS coexistence
+   tests are also implemented. See the native validation guide for exact scope.
 
 ## Dependencies and test strategy
 
@@ -65,7 +66,8 @@ Test schema failures, every indicator's positive/negative cases, all four
 confusion outcomes, independently labeled benign marker collisions, missed
 encoded indicators, undefined metrics, deterministic reports, missing/corrupt
 input, CLI exit codes, coverage gates, and running outside repository cwd.
-Do not execute existing PoCs or mutate exploit, detection, or lab files.
+Do not execute existing PoCs or mutate exploit or lab files. Native engine
+failures may justify narrowly scoped detection-rule fixes with regression evidence.
 
 ## Risks and acceptance criteria
 
@@ -81,5 +83,7 @@ negative examples, all unit/CLI regression tests pass locally, reports are
 deterministic, malformed input exits 2 without a traceback, regression or
 required coverage failure exits 1, and no network/exploit execution occurs.
 CI workflow execution on GitHub remains unverified until an actual remote run.
-Native engine validation, SARIF, response-side coverage, and Docker integration
-must remain explicitly pending.
+Native engine validation, SARIF, response fixtures and Docker integration were
+subsequently implemented and tested. See [native validation](../native-validation.md)
+and [validation results](validation-results.md). Full web-SAPI exploitability
+validation and universal SIEM/engine-version compatibility are not claimed.

@@ -7,3 +7,5 @@ lab/nginx.conf
 lab/www.conf
 *.pcap
 *.log
+.venv/
+artifacts/

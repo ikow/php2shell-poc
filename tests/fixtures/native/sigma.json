@@ -1,0 +1,179 @@
+[
+  {
+    "id": "web-progress-positive",
+    "description": "Synthetic web progress positive",
+    "malicious": true,
+    "event": {
+      "cs-method": "POST",
+      "cs-uri": "/index.php",
+      "RequestBody": "PHP_SESSION_UPLOAD_PROGRESS"
+    },
+    "logsource": {
+      "category": "webserver"
+    },
+    "expected": [
+      "80bfee4a-5d2e-54b7-9278-eda06feebeb0"
+    ]
+  },
+  {
+    "id": "web-oversized-positive",
+    "description": "Synthetic web oversized positive",
+    "malicious": true,
+    "event": {
+      "cs-method": "POST",
+      "cs-uri": "/index.php",
+      "sc-status": 502,
+      "cs-bytes": 5000000
+    },
+    "logsource": {
+      "category": "webserver"
+    },
+    "expected": [
+      "2136d352-c4e8-5a27-94c2-bab7bc2de435"
+    ]
+  },
+  {
+    "id": "process-positive",
+    "description": "Synthetic process positive",
+    "malicious": true,
+    "event": {
+      "ParentImage": "/usr/sbin/php-fpm",
+      "Image": "/bin/sh"
+    },
+    "logsource": {
+      "product": "linux",
+      "category": "process_creation"
+    },
+    "expected": [
+      "3b1f6ae8-5735-5684-a2a4-aa9090331a77"
+    ]
+  },
+  {
+    "id": "file-positive",
+    "description": "Synthetic file positive",
+    "malicious": true,
+    "event": {
+      "TargetFilename": "/var/lib/php/sessions/sess_sample",
+      "Content": "<?php"
+    },
+    "logsource": {
+      "product": "linux",
+      "category": "file_event"
+    },
+    "expected": [
+      "16a5ccb1-e921-58f2-b5f9-f36b15656dd9"
+    ]
+  },
+  {
+    "id": "oom-log-positive",
+    "description": "Synthetic oom log positive",
+    "malicious": true,
+    "event": {
+      "Message": "Allowed memory size of 10 bytes exhausted"
+    },
+    "logsource": {
+      "product": "php",
+      "category": "application"
+    },
+    "expected": [
+      "005a046d-3142-5e7d-a098-f3fe110f3eb7"
+    ]
+  },
+  {
+    "id": "web-progress-negative",
+    "description": "Synthetic web progress negative",
+    "malicious": false,
+    "event": {
+      "cs-method": "POST",
+      "cs-uri": "/index.php",
+      "RequestBody": "ordinary"
+    },
+    "logsource": {
+      "category": "webserver"
+    },
+    "expected": []
+  },
+  {
+    "id": "web-oversized-negative",
+    "description": "Synthetic web oversized negative",
+    "malicious": false,
+    "event": {
+      "cs-method": "POST",
+      "cs-uri": "/index.php",
+      "sc-status": 502,
+      "cs-bytes": 4999999
+    },
+    "logsource": {
+      "category": "webserver"
+    },
+    "expected": []
+  },
+  {
+    "id": "process-negative",
+    "description": "Synthetic process negative",
+    "malicious": false,
+    "event": {
+      "ParentImage": "/usr/bin/example",
+      "Image": "/bin/sh"
+    },
+    "logsource": {
+      "product": "linux",
+      "category": "process_creation"
+    },
+    "expected": []
+  },
+  {
+    "id": "file-negative",
+    "description": "Synthetic file negative",
+    "malicious": false,
+    "event": {
+      "TargetFilename": "/var/lib/php/sessions/sess_sample",
+      "Content": "ordinary"
+    },
+    "logsource": {
+      "product": "linux",
+      "category": "file_event"
+    },
+    "expected": []
+  },
+  {
+    "id": "oom-log-negative",
+    "description": "Synthetic oom log negative",
+    "malicious": false,
+    "event": {
+      "Message": "Allowed memory size configured"
+    },
+    "logsource": {
+      "product": "php",
+      "category": "application"
+    },
+    "expected": []
+  },
+  {
+    "id": "wrong-logsource",
+    "description": "Synthetic wrong logsource",
+    "malicious": false,
+    "event": {
+      "ParentImage": "/usr/sbin/php-fpm",
+      "Image": "/bin/sh"
+    },
+    "logsource": {
+      "category": "webserver"
+    },
+    "expected": []
+  },
+  {
+    "id": "literal-php-marker-negative",
+    "description": "Sigma question mark is literal, not a wildcard",
+    "malicious": false,
+    "event": {
+      "TargetFilename": "/var/lib/php/sessions/sess_sample",
+      "Content": "<xphp"
+    },
+    "logsource": {
+      "product": "linux",
+      "category": "file_event"
+    },
+    "expected": []
+  }
+]
