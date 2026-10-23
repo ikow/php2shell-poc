@@ -141,6 +141,8 @@ session.use_only_cookies = On
 
 > **The only complete fix is patching PHP** to 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12+. The OOM corruption (Chain D) is in the Zend engine core — no INI setting fixes it.
 
+For legacy / EOL environments (PHP 5.4 through 8.1) where upstream provides no official security updates, community-maintained and fleet-tested backports with deployment automation and verification tooling are available at [Anton-Barinov/php2shell-patches](https://github.com/Anton-Barinov/php2shell-patches).
+
 ## Downstream Impact
 
 Wiz has demonstrated pre-auth RCE on stock container images:
@@ -163,6 +165,7 @@ Wiz has demonstrated pre-auth RCE on stock container images:
 - [Sansec analysis](https://sansec.io/research/php2shell) — PHPSESSID heap leak discovery
 - [Wiz downstream impact](https://www.wiz.io/blog/php2shell-php-rce)
 - [Corelight detection](https://github.com/corelight/php2shell-detect) — Zeek + Suricata community rules
+- [Community EOL Backports (PHP 5.4–8.1)](https://github.com/Anton-Barinov/php2shell-patches) — fleet-validated patches, deploy tooling & verification suite
 
 ## Disclaimer
 
