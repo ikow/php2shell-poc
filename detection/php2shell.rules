@@ -189,6 +189,25 @@ alert http $HOME_NET any -> $EXTERNAL_NET any ( \
     reference:url,sansec.io/research/php2shell; \
 )
 
+# SID 2026113 — PHPSESSID containing NUL bytes (forged id, memory content)
+# A genuine session id is 26-48 chars of [A-Za-z0-9,-]. The forged id produced
+# by the OOM chains is a 4000-byte cookie whose decoded value contains NUL runs
+# and filler bytes. PHP percent-encodes NUL as %00, which cannot appear in a
+# real id. Measured artifact; see the validation matrix referenced below.
+# Severity: CRITICAL — post-exploitation artifact with near-zero false positives
+alert http $HOME_NET any -> $EXTERNAL_NET any ( \
+    msg:"PHP2SHELL forged PHPSESSID with NUL bytes in response (memory content)"; \
+    flow:established,to_client; \
+    http.header; content:"Set-Cookie"; nocase; content:"PHPSESSID="; nocase; \
+    pcre:"/Set-Cookie:[^\r\n]*PHPSESSID=[A-Za-z0-9%]*%00/i"; \
+    classtype:web-application-attack; \
+    sid:2026113; rev:1; \
+    metadata:cve CVE-2026-109619, \
+             created_at 2026_10_23, updated_at 2026_10_23; \
+    reference:cve,2026-109619; \
+    reference:url,github.com/JoshRob297/php2shell-research; \
+)
+
 # --------------------------------------------------------------------------
 # RECONNAISSANCE DETECTION
 # --------------------------------------------------------------------------
@@ -204,7 +223,7 @@ alert http $EXTERNAL_NET any -> $HOME_NET any ( \
     http.method; content:"POST"; \
     http.content_type; content:"multipart/form-data"; \
     http.request_body; content:"PHP_SESSION_UPLOAD_PROGRESS"; \
-    dsize:<2000; \
+    http.content_len:to_server; pcre:"/^(?:[0-9]{1,3}|1[0-9]{3})$/"; \
     threshold:type both, track by_src, count 3, seconds 60; \
     classtype:web-application-activity; \
     sid:2026115; rev:1; \

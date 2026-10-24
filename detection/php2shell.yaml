@@ -188,3 +188,33 @@ falsepositives:
 tags:
   - attack.initial_access
   - cve.2026.109618
+
+---
+title: php2shell Forged Session Id with NUL Bytes in Response
+id: a1f2e3d4-5678-9abc-def0-php2shell006
+status: experimental
+description: >
+  Detects a PHPSESSID value in a response that contains NUL bytes and cannot
+  be genuine. The OOM chains overwrite the in-memory session id so that
+  php_session_send_cookie() serialises freed heap memory; the resulting cookie
+  decodes to filler and NUL runs. PHP percent-encodes NUL as %00.
+author: JoshRob
+date: 2026-10-23
+references:
+  - https://github.com/JoshRob297/php2shell-research
+  - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+logsource:
+  category: proxy
+detection:
+  selection_raw:
+    set_cookie|contains: '%00'
+  selection_decoded:
+    set_cookie|contains: "\x00"
+  condition: 1 of selection_*
+falsepositives:
+  - Reverse proxies that percent-encode unrelated cookie bytes (rare)
+level: critical
+tags:
+  - attack.initial_access
+  - attack.t1190
+  - cve.2026.109619

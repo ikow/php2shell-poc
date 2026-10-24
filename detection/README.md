@@ -6,7 +6,7 @@ Detection and blocking rules for CVE-2026-109618 / CVE-2026-109619.
 
 | File | Format | Use Case |
 |------|--------|----------|
-| `php2shell.rules` | Suricata / Snort | Network IDS — 13 rules covering request-side, response-side, and recon |
+| `php2shell.rules` | Suricata / Snort | Network IDS — 13 rules covering request-side, response-side, and recon (incl. NUL-cookie artifact) |
 | `php2shell.yaml` | Sigma | SIEM log detection — web server logs and host-level process/file events |
 | `modsecurity.conf` | ModSecurity v2/v3 | WAF — drop-in rules for Apache/Nginx with ModSecurity |
 | `php2shell.lua` | OpenResty / Nginx Lua | Reverse proxy — lightweight Lua module for OpenResty |
@@ -51,6 +51,7 @@ access_by_lua_block {
 | 2026110 | PHP OOM "memory exhausted" in response | HIGH |
 | 2026111 | "Session object destruction failed" in response | CRITICAL |
 | 2026112 | Anomalous PHPSESSID cookie length (heap leak) | CRITICAL |
+| 2026113 | PHPSESSID containing NUL bytes (forged id, freed-heap content) | CRITICAL |
 | **Reconnaissance** | | |
 | 2026115 | Small upload progress probes (threshold: 3/60s) | LOW |
 | 2026116 | Vulnerable PHP version in response header | INFO |
@@ -58,7 +59,8 @@ access_by_lua_block {
 ## Notes
 
 - **SID 2026100 is the single most important rule.** It covers the primary attack vector for both CVEs with near-zero false positives.
-- Response-side rules (2026110-2026112) detect exploitation that bypassed request-side defenses. Deploy both layers.
+- Response-side rules (2026110-2026113) detect exploitation that bypassed request-side defenses. Deploy both layers. 2026113 has the lowest false-positive rate of the set: a genuine session id never contains a percent-encoded NUL.
+- Rule 2026115 uses `http.content_len:to_server` with a bounded digits pcre instead of `dsize`; the original `dsize` form combined packet-level matching with `http.*` keywords and failed to load on Suricata 8 (`E: detect-parse: Signature combines packet specific matches ... with stream / state matching`).
 - The 64KB body inspection limit in many WAFs means attackers can pad past your inspection window. PHP-level mitigation (`session.upload_progress.enabled = Off`) is the reliable fix.
 - These rules complement, but do not replace, patching PHP to 8.2.35+ / 8.3.36+ / 8.4.27+ / 8.5.12+.
 
