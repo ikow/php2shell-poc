@@ -23,9 +23,12 @@ python3 scanner/check.py https://example.com --json
 | 1 | Version fingerprint (headers) | None | 1 GET |
 | 2 | `upload_progress` reachability | Low | 1-2 POST (~2KB) |
 | 3 | Session write verification | Low | 1 POST + 1 GET |
+| 3.5 | OOM reachability estimate (offline) | None | 0 |
 | 4 | OOM differential | **Destructive** | 1 POST (~2MB) |
 
-Tiers 1-3 run by default. Tier 4 requires `--active`.
+Tiers 1-3 run by default. Tier 3.5 runs when the target's resource limits are supplied.
+Tier 4 requires `--active`, and is skipped automatically when tier 3.5 returns
+`UNREACHABLE`.
 
 ### Tier 1: Version Fingerprint
 Extracts PHP version from `X-Powered-By`, `Server` headers, and error pages. Detects SAPI type (FPM vs mod_php). Compares against patched versions.
@@ -35,6 +38,25 @@ Sends a minimal multipart POST with `PHP_SESSION_UPLOAD_PROGRESS`. If a session 
 
 ### Tier 3: Session Write Verification
 Injects a harmless marker string in the upload filename and checks if it appears in the session. Confirms the filename injection primitive that enables Chains A/C/E.
+
+### Tier 3.5: OOM Reachability Estimate
+Offline arithmetic, no traffic. Given the target's known `memory_limit` and
+`post_max_size` (from your own inventory), estimates whether a multipart body can
+exhaust memory at all. The model is `footprint ~= 2 * body + 1 MiB`, fitted on five
+calibration points (see `oom_reach.py`). With stock PHP limits (128M / 8M) the
+largest body a client can submit yields ~17 MiB of footprint, far below 128 MiB:
+the OOM-driven chains cannot start, and a destructive probe would only test that.
+
+```bash
+# Non-destructive scan with known limits
+python3 scanner/check.py https://example.com --memory-limit 128M --post-max-size 8M
+
+# Standalone estimate (offline)
+python3 scanner/oom_reach.py -m 128M -p 8M
+python3 scanner/oom_reach.py -m 8M -p 64M -b 3.7M   # lab-style override
+```
+
+When the estimate is `UNREACHABLE`, `--active` prints a notice and skips tier 4.
 
 ### Tier 4: OOM Differential (opt-in)
 Sends an oversized multipart to trigger `memory_limit`. Compares the crash behavior to a baseline GET:

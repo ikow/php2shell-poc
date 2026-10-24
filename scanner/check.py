@@ -6,7 +6,8 @@ php2shell Scanner — CVE-2026-109618 / CVE-2026-109619 Vulnerability Check
   1. Version fingerprint (passive)
   2. upload_progress reachability probe (low risk)
   3. Session write verification (low risk)
-  4. OOM differential (opt-in --active, destructive)
+  3.5 OOM reachability estimate (offline; needs --memory-limit / --post-max-size)
+  4. OOM differential (opt-in --active, destructive; skipped when tier 3.5 rules it out)
 
 Zero external dependencies — stdlib only.
 
@@ -23,6 +24,14 @@ import sys
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
+
+try:
+    from oom_reach import (estimate as estimate_oom,
+                           format_estimate, parse_size as parse_php_size)
+except ImportError:  # imported from a different working directory
+    estimate_oom = None
+    format_estimate = None
+    parse_php_size = None
 
 # ── Patched version boundaries ──────────────────────────────────────────────
 # Versions >= these are patched for CVE-2026-109618/109619
@@ -415,7 +424,7 @@ def check_oom(host, port, path, tls, timeout=15):
 #  Orchestrator
 # ════════════════════════════════════════════════════════════════════════════
 
-def scan(url, active=False, path=None, timeout=10):
+def scan(url, active=False, path=None, timeout=10, reachability=None):
     """Run all applicable tiers and return a verdict."""
     host, port, tls, url_path = parse_target(url)
     if path:
@@ -462,13 +471,25 @@ def scan(url, active=False, path=None, timeout=10):
         except Exception as e:
             result["checks"]["session_write"] = {"error": str(e)}
 
-    # Tier 4: OOM (only with --active)
+    # Tier 3.5: OOM reachability estimate (offline; requires known limits)
+    if reachability is not None:
+        result["checks"]["oom_reach"] = reachability
+
+    # Tier 4: OOM (only with --active, and only if tier 3.5 does not rule it out)
     if active:
-        try:
-            oom = check_oom(host, port, url_path, tls, timeout=max(timeout, 15))
-            result["checks"]["oom"] = oom
-        except Exception as e:
-            result["checks"]["oom"] = {"error": str(e)}
+        if reachability is not None and reachability.get("verdict") == "UNREACHABLE":
+            result["checks"]["oom"] = {
+                "vulnerable": None,
+                "behavior": "skipped_unreachable",
+                "details": "OOM probe skipped: configured limits make the "
+                           "primitive unreachable (see checks.oom_reach)",
+            }
+        else:
+            try:
+                oom = check_oom(host, port, url_path, tls, timeout=max(timeout, 15))
+                result["checks"]["oom"] = oom
+            except Exception as e:
+                result["checks"]["oom"] = {"error": str(e)}
 
     # ── Verdict ──
     ver = result["checks"].get("version", {})
@@ -581,6 +602,12 @@ def format_text(r):
         elif "error" not in sw:
             lines.append(f"    session write: {sw.get('details', 'not tested')}")
 
+    # Tier 3.5: OOM reachability estimate
+    hr = r["checks"].get("oom_reach", {})
+    if hr:
+        lines.append(f"    OOM reachable at config: {hr.get('verdict')} "
+                     f"(footprint {hr.get('footprint_h')} / limit {hr.get('memory_limit_h')})")
+
     # Tier 4: OOM
     oom = r["checks"].get("oom", {})
     if oom:
@@ -630,6 +657,18 @@ def main():
                     help="Override endpoint path (default: from URL or /)")
     ap.add_argument("--active", action="store_true",
                     help="Enable OOM differential probe (DESTRUCTIVE — may crash workers)")
+    ap.add_argument("--memory-limit", default=None, metavar="SIZE",
+                    help="Known PHP memory_limit (e.g. 128M) for the tier 3.5 "
+                         "reachability estimate")
+    ap.add_argument("--post-max-size", default=None, metavar="SIZE",
+                    help="Known PHP post_max_size (e.g. 8M) for tier 3.5")
+    ap.add_argument("--upload-max-filesize", default=None, metavar="SIZE",
+                    help="Known PHP upload_max_filesize (optional, tier 3.5)")
+    ap.add_argument("--body-size", default=None, metavar="SIZE",
+                    help="Body size the attacker can send (default: the cap)")
+    ap.add_argument("--estimate-only", action="store_true",
+                    help="Print the tier 3.5 estimate and exit (requires "
+                         "--memory-limit and/or --post-max-size)")
     ap.add_argument("--json", "-j", action="store_true",
                     help="JSON output")
     ap.add_argument("--threads", "-t", type=int, default=10,
@@ -639,6 +678,33 @@ def main():
     ap.add_argument("--quiet", "-q", action="store_true",
                     help="Only show vulnerable targets")
     args = ap.parse_args()
+
+    # Tier 3.5 inputs: known resource limits (optional, non-destructive)
+    reachability = None
+    if args.memory_limit or args.post_max_size or args.upload_max_filesize:
+        if estimate_oom is None:
+            ap.error("oom_reach module not found next to check.py")
+        try:
+            memory_limit = (parse_php_size(args.memory_limit)
+                            if args.memory_limit else 128 * 1024 * 1024)
+            post_max_size = (parse_php_size(args.post_max_size)
+                             if args.post_max_size else 8 * 1024 * 1024)
+            upload = (parse_php_size(args.upload_max_filesize)
+                      if args.upload_max_filesize else None)
+            body = parse_php_size(args.body_size) if args.body_size else None
+        except ValueError as exc:
+            ap.error(f"invalid size: {exc}")
+        reachability = estimate_oom(memory_limit, post_max_size, body, upload)
+
+    if args.estimate_only:
+        if reachability is None:
+            ap.error("--estimate-only requires --memory-limit and/or --post-max-size")
+        if args.json:
+            print(json.dumps(reachability, indent=2))
+        else:
+            for line in format_estimate(reachability):
+                print(line)
+        return {"REACHABLE": 0, "UNREACHABLE": 1, "BORDERLINE": 2}[reachability["verdict"]]
 
     if not args.target and not args.targets:
         ap.error("Provide a target URL or --targets file")
@@ -669,17 +735,25 @@ def main():
         ap.error("No targets to scan")
 
     if args.active:
-        print(_color("[!] Active mode: OOM probes WILL be sent. This may crash PHP workers.", _YLW),
-              file=sys.stderr)
+        if reachability is not None and reachability.get("verdict") == "UNREACHABLE":
+            print(_color("[i] Active mode requested, but the tier 3.5 estimate says the "
+                         "OOM primitive is UNREACHABLE at the supplied limits; "
+                         "tier 4 will be skipped.", _YLW),
+                  file=sys.stderr)
+        else:
+            print(_color("[!] Active mode: OOM probes WILL be sent. This may crash PHP workers.", _YLW),
+                  file=sys.stderr)
 
     # Scan
     results = []
     if len(targets) == 1:
-        r = scan(targets[0], active=args.active, path=args.path, timeout=args.timeout)
+        r = scan(targets[0], active=args.active, path=args.path, timeout=args.timeout,
+                 reachability=reachability)
         results.append(r)
     else:
         def _scan(url):
-            return scan(url, active=args.active, path=args.path, timeout=args.timeout)
+            return scan(url, active=args.active, path=args.path, timeout=args.timeout,
+                        reachability=reachability)
 
         total = len(targets)
         done = 0
