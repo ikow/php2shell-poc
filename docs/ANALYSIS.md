@@ -226,7 +226,7 @@ Even though the decoder returns FAILURE and `session_start()` calls `php_session
 | 8.4.x | Yes | Yes | → 8.4.27 |
 | 8.5.x | Yes | Yes | → 8.5.12 |
 
-Vulnerable code identical across ALL versions from PHP 5.4.0 (2012) to present.
+Vulnerable code is identical across ALL versions from PHP 5.4.0 (2012) to present.
 
 ## 5. Detection
 
