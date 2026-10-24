@@ -78,12 +78,27 @@ Pre-built IDS / WAF / SIEM rules in [`detection/`](detection/):
 
 | File | Format | Signatures |
 |------|--------|-----------|
-| `php2shell.rules` | Suricata / Snort | 13 rules — request, response, and recon |
-| `php2shell.yaml` | Sigma | 5 rules — web logs, process creation, file events |
+| `php2shell.rules` | Suricata / Snort | 13 rules — request, response, and recon (incl. NUL-cookie artifact) |
+| `php2shell.yaml` | Sigma | 6 rules — web logs, process creation, file events |
 | `modsecurity.conf` | ModSecurity v2/v3 | 7 rules — drop-in for Apache/Nginx |
 | `php2shell.lua` | OpenResty Lua | Lightweight reverse proxy module |
 
 **Fastest mitigation:** block `PHP_SESSION_UPLOAD_PROGRESS` in multipart POST bodies. Near-zero legitimate use, covers the primary attack vector for both CVEs.
+
+## Scanner
+
+`scanner/check.py` runs a progressive check: version fingerprint, `upload_progress`
+reachability, session-write verification, and an opt-in OOM differential. An additional
+non-destructive tier estimates whether the OOM primitive is reachable at known resource
+limits before any destructive probe is sent:
+
+```bash
+python3 scanner/check.py https://example.com     --memory-limit 128M --post-max-size 8M
+python3 scanner/oom_reach.py -m 128M -p 8M     # standalone, offline
+```
+
+With stock PHP limits (`memory_limit=128M`, `post_max_size=8M`) the estimate is
+`UNREACHABLE` and `--active` skips the destructive tier by design.
 
 ## Quick Start
 
@@ -116,6 +131,9 @@ php2shell-poc/
 │   ├── php2shell.yaml                # Sigma SIEM detection rules
 │   ├── modsecurity.conf              # ModSecurity WAF rules
 │   └── php2shell.lua                 # OpenResty / Nginx Lua WAF module
+├── scanner/
+│   ├── check.py                      # Progressive scanner (tiers 1-4 + 3.5 estimate)
+│   └── oom_reach.py                  # Offline OOM reachability estimator
 ├── poc/
 │   ├── verify_session_injection.py   # Verify Chain A
 │   ├── verify_uaf_asan.php           # Verify Chain B (ASAN)
