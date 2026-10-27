@@ -707,11 +707,11 @@ def main():
             print(format_text(r))
             print()
 
-    # Exit code: 0 if any vulnerable found, 1 if all safe, 2 if all unknown/error
+    # Exit code: 0 if any vulnerable found, 1 if all patched, 2 otherwise
     verdicts = {r["verdict"] for r in results}
     if verdicts & {"VULNERABLE", "LIKELY_VULNERABLE"}:
         return 0
-    if verdicts & {"PATCHED"}:
+    if verdicts == {"PATCHED"}:
         return 1
     return 2
 
