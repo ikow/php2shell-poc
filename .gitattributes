@@ -1,0 +1,3 @@
+# Keep shell scripts LF so bash heredocs (cat > webroot/...) work on Windows checkouts
+*.sh text eol=lf
+lab/setup.sh text eol=lf

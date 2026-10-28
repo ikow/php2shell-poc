@@ -73,6 +73,11 @@ def main():
 
     if b"memory" not in body1.lower():
         print("    FAIL: No OOM. Check session file size and memory_limit.")
+        print("    HINT: setup.sh does not create the ~30MB session file.")
+        print("    Create it manually, e.g.:")
+        print("      python3 poc/make_huge_session.py --target http://127.0.0.1:18080")
+        print("    The file is truncated to 0 bytes after the producer OOM,")
+        print("    so it must be recreated before each run (one-shot).")
         return 1
     print("    OK: OOM triggered during php_var_unserialize")
 

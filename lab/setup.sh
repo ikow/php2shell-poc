@@ -30,9 +30,10 @@ PHP
 
 # LFI sink — simulates real-world include vulnerability
 # (WordPress plugins, custom PHP apps, etc.)
+# NOTE: use isset() instead of ?? for PHP 5.6 compat (?? requires PHP 7+)
 cat > webroot/vuln.php << 'PHP'
 <?php
-$page = $_GET['page'] ?? 'home';
+$page = isset($_GET['page']) ? $_GET['page'] : 'home';
 include($page);
 PHP
 
