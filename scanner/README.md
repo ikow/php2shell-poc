@@ -75,7 +75,7 @@ options:
 |------|---------|
 | 0 | At least one target is vulnerable |
 | 1 | All targets are patched |
-| 2 | All targets are unknown/error |
+| 2 | No vulnerable targets found, but at least one target is unknown/error |
 
 ## Examples
 
@@ -94,9 +94,32 @@ echo "https://example.com" | python3 scanner/check.py --targets -
 # Active mode (will crash unpatched workers)
 python3 scanner/check.py http://127.0.0.1:18091 --active
 
-# CI integration — exit code 0 means vulnerable found
-python3 scanner/check.py --targets prod-hosts.txt --quiet --json || echo "All clear"
+# CI integration — distinguish findings, patched targets, and incomplete scans
+if python3 scanner/check.py --targets prod-hosts.txt --quiet --json; then
+    echo "Vulnerable targets found" >&2
+    exit 1
+else
+    status=$?
+    case "$status" in
+        1) echo "All targets reported PATCHED" ;;
+        *) echo "Scan incomplete or failed (exit $status)" >&2; exit 2 ;;
+    esac
+fi
 ```
+
+## Offline Tests
+
+Run from the repository root (Python standard library only):
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The tests simulate scan results and block socket connections. They cover
+single-target and concurrent batch exit codes, including mixed patched and
+unknown/error results, vulnerable-result precedence, and JSON/text/quiet output.
+Exit code 1 requires every target to report `PATCHED`; a partially inconclusive
+batch returns 2 unless a vulnerable target was found (exit code 0).
 
 ## How It Compares
 
