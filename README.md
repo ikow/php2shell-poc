@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="#exploits">Exploits</a> · <a href="#detection-rules">Detection</a> · <a href="#quick-start">Lab</a> · <a href="https://qideng.substack.com/p/php2shell-dissecting-phps-critical">Writeup</a>
+  <a href="#exploits">Exploits</a> · <a href="#detection-rules">Detection</a> · <a href="#quick-start">Lab</a> · <a href="docs/EXPLOITATION.md">ITW Tracker</a> · <a href="https://qideng.substack.com/p/php2shell-dissecting-phps-critical">Writeup</a> · <a href="https://qideng.substack.com/p/php2shell-one-week-later-cisa-kev">Week 1 Report</a>
 </p>
 
 ---
@@ -24,7 +24,7 @@ Five independent RCE chains exploiting PHP's `session.upload_progress` and the Z
 
 Impacts **78% of all websites** — including WordPress (43%), Joomla, Drupal, Laravel, Magento, and every default PHP installation.
 
-**Author:** [Qi Deng](https://github.com/ikow) &nbsp;|&nbsp; **Writeup:** [Substack](https://qideng.substack.com/p/php2shell-dissecting-phps-critical) &nbsp;|&nbsp; **Date:** 2026-10-21
+**Author:** [Qi Deng](https://github.com/ikow) &nbsp;|&nbsp; **Writeup:** [Substack](https://qideng.substack.com/p/php2shell-dissecting-phps-critical) &nbsp;|&nbsp; **Week 1 Report:** [Substack](https://qideng.substack.com/p/php2shell-one-week-later-cisa-kev) &nbsp;|&nbsp; **Date:** 2026-10-21
 
 ## CVE Details
 
@@ -128,7 +128,9 @@ php2shell-poc/
 │   └── php.ini / php-apache.ini      # Vulnerable PHP configs
 └── docs/
     ├── ANALYSIS.md                   # Full technical analysis
-    └── substack_article.md           # Writeup source
+    ├── EXPLOITATION.md               # ITW exploitation tracker, IOCs, downstream impact
+    ├── substack_article.md           # Writeup source (original)
+    └── substack_exploitation_article.md  # Week 1 report source
 ```
 
 ## Mitigation
@@ -141,6 +143,17 @@ session.use_only_cookies = On
 
 > **The only complete fix is patching PHP** to 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12+. The OOM corruption (Chain D) is in the Zend engine core — no INI setting fixes it.
 
+## Exploitation in the Wild
+
+> **CISA KEV listed** (2026-10-26) &nbsp;|&nbsp; **Confirmed RCE** on honeypot (2026-10-24) &nbsp;|&nbsp; **Millions** of attempts within 24h
+
+Full analysis: **[PHP2Shell One Week Later](https://qideng.substack.com/p/php2shell-one-week-later-cisa-kev)** (Substack) &nbsp;|&nbsp; Live tracker with IOCs: **[docs/EXPLOITATION.md](docs/EXPLOITATION.md)**
+
+Highlights:
+- **ASLR bypass PoC** leaked addresses via `Set-Cookie` — works on x86_64 with production config, no debugger needed
+- **Potassium** (Mirai fork) delivered via php2shell — ChaCha20-encrypted config, 20 DDoS commands, reverse shell
+- **Downstream pre-auth RCE confirmed** on WordPress, Drupal, Joomla, Magento, Roundcube, phpMyAdmin, Nextcloud, Laravel, Symfony, MediaWiki, WooCommerce, Shopware, WHMCS
+
 ## Downstream Impact
 
 Wiz has demonstrated pre-auth RCE on stock container images:
@@ -152,6 +165,16 @@ Wiz has demonstrated pre-auth RCE on stock container images:
 | Drupal | Yes | Uses native PHP sessions by default |
 | Magento | Yes | Vulnerable even in maintenance mode |
 | Laravel | Yes | `PendingBroadcast` is a known `__destruct` gadget |
+| Roundcube | Yes | Webmail — credential exposure risk |
+| phpMyAdmin | Yes | Direct database access |
+| Nextcloud | Yes | File storage system |
+| Symfony | Yes | Framework-level exposure |
+| MediaWiki | Yes | Wiki platform |
+| WooCommerce | Yes | WordPress plugin; payment data at risk |
+| Shopware | Yes | E-commerce platform |
+| WHMCS | Yes | Hosting control panel |
+
+See **[docs/EXPLOITATION.md](docs/EXPLOITATION.md)** for full details, IOCs, and attacker tooling.
 
 ## References
 
@@ -163,6 +186,10 @@ Wiz has demonstrated pre-auth RCE on stock container images:
 - [Sansec analysis](https://sansec.io/research/php2shell) — PHPSESSID heap leak discovery
 - [Wiz downstream impact](https://www.wiz.io/blog/php2shell-php-rce)
 - [Corelight detection](https://github.com/corelight/php2shell-detect) — Zeek + Suricata community rules
+- [Wiz exploitation analysis](https://www.wiz.io/blog/php2shell-exploitation-so-far) — Honeypot data, remediation stats
+- [ELLIO sensor data](https://ellio.tech/en/blog/php2shell-what-we-observed-and-what-to-do/) — First-seen timeline, payload observations
+- [VulnCheck exploit](https://www.vulncheck.com/blog/php2shell-vulnerabilities) — Production-config ASLR bypass
+- [Nokia Deepfield Potassium](https://github.com/deepfield/public-research/tree/main/potassium) — Mirai-variant botnet analysis
 
 ## Disclaimer
 
