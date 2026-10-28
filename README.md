@@ -143,6 +143,8 @@ session.use_only_cookies = On
 
 > **The only complete fix is patching PHP** to 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12+. The OOM corruption (Chain D) is in the Zend engine core — no INI setting fixes it.
 
+For legacy / EOL environments (PHP 5.4–8.1) where upstream provides no official security updates, community-maintained backports with deployment automation and verification tooling are available at [Anton-Barinov/php2shell-patches](https://github.com/Anton-Barinov/php2shell-patches).
+
 ## Exploitation in the Wild
 
 > **CISA KEV listed** (2026-10-26) &nbsp;|&nbsp; **Confirmed RCE** on honeypot (2026-10-24) &nbsp;|&nbsp; **Millions** of attempts within 24h
@@ -190,6 +192,7 @@ See **[docs/EXPLOITATION.md](docs/EXPLOITATION.md)** for full details, IOCs, and
 - [ELLIO sensor data](https://ellio.tech/en/blog/php2shell-what-we-observed-and-what-to-do/) — First-seen timeline, payload observations
 - [VulnCheck exploit](https://www.vulncheck.com/blog/php2shell-vulnerabilities) — Production-config ASLR bypass
 - [Nokia Deepfield Potassium](https://github.com/deepfield/public-research/tree/main/potassium) — Mirai-variant botnet analysis
+- [Community EOL Backports (PHP 5.4–8.1)](https://github.com/Anton-Barinov/php2shell-patches) — fleet-validated patches, deploy tooling & verification suite
 
 ## Disclaimer
 

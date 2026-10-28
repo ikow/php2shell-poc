@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href="#漏洞利用">漏洞利用</a> · <a href="#检测规则">检测规则</a> · <a href="#快速开始">实验环境</a> · <a href="https://qideng.substack.com/p/php2shell-dissecting-phps-critical">分析原文</a>
+  <a href="#漏洞利用">漏洞利用</a> · <a href="#检测规则">检测规则</a> · <a href="#快速开始">实验环境</a> · <a href="docs/EXPLOITATION.md">野外利用追踪</a> · <a href="https://qideng.substack.com/p/php2shell-dissecting-phps-critical">分析原文</a> · <a href="https://qideng.substack.com/p/php2shell-one-week-later-cisa-kev">一周报告</a>
 </p>
 
 ---
@@ -132,7 +132,9 @@ php2shell-poc/
 │   └── php.ini / php-apache.ini      # 存在漏洞的 PHP 配置
 └── docs/
     ├── ANALYSIS.md                   # 完整技术分析
-    └── substack_article.md           # 分析文章原稿
+    ├── EXPLOITATION.md               # 野外利用追踪、IOC、下游影响
+    ├── substack_article.md           # 分析文章原稿
+    └── substack_exploitation_article.md  # 一周报告原稿
 ```
 
 ## 缓解措施
@@ -145,6 +147,19 @@ session.use_only_cookies = On
 
 > **唯一彻底的修复方式是给 PHP 打补丁**，升级至 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12 或更高版本。OOM 内存破坏（利用链 D）位于 Zend 引擎核心 —— 没有任何 INI 配置能够修复它。
 
+对于不再受官方支持的 PHP 版本（5.4–8.1），社区维护的补丁回移（含部署自动化和验证工具）可在 [Anton-Barinov/php2shell-patches](https://github.com/Anton-Barinov/php2shell-patches) 获取。
+
+## 野外利用情况
+
+> **CISA KEV 已收录**（2026-10-26）&nbsp;|&nbsp; **蜜罐确认 RCE**（2026-10-24）&nbsp;|&nbsp; 24 小时内**数百万**次攻击尝试
+
+完整分析：**[PHP2Shell 一周后](https://qideng.substack.com/p/php2shell-one-week-later-cisa-kev)**（Substack）&nbsp;|&nbsp; IOC 追踪：**[docs/EXPLOITATION.md](docs/EXPLOITATION.md)**
+
+要点：
+- **ASLR 绕过 PoC** 通过 `Set-Cookie` 泄漏地址 —— 在 x86_64 生产配置下可用，无需调试器
+- **Potassium**（Mirai 变种）通过 php2shell 投递 —— ChaCha20 加密配置、20 种 DDoS 命令、反向 shell
+- **下游预认证 RCE 已确认**：WordPress、Drupal、Joomla、Magento、Roundcube、phpMyAdmin、Nextcloud、Laravel、Symfony、MediaWiki、WooCommerce、Shopware、WHMCS
+
 ## 下游影响
 
 Wiz 已在官方原版容器镜像上演示了预认证 RCE：
@@ -156,6 +171,16 @@ Wiz 已在官方原版容器镜像上演示了预认证 RCE：
 | Drupal | 是 | 默认使用 PHP 原生 session |
 | Magento | 是 | 即使处于维护模式（maintenance mode）仍可被利用 |
 | Laravel | 是 | `PendingBroadcast` 是已知的 `__destruct` 利用 gadget |
+| Roundcube | 是 | 邮件系统 —— 凭据泄露风险 |
+| phpMyAdmin | 是 | 直接数据库访问 |
+| Nextcloud | 是 | 文件存储系统 |
+| Symfony | 是 | 框架级暴露 |
+| MediaWiki | 是 | 维基平台 |
+| WooCommerce | 是 | WordPress 插件；支付数据面临风险 |
+| Shopware | 是 | 电商平台 |
+| WHMCS | 是 | 主机控制面板 |
+
+完整详情、IOC 和攻击工具追踪见 **[docs/EXPLOITATION.md](docs/EXPLOITATION.md)**。
 
 ## 参考链接
 
@@ -167,6 +192,11 @@ Wiz 已在官方原版容器镜像上演示了预认证 RCE：
 - [Sansec 分析](https://sansec.io/research/php2shell) —— PHPSESSID 堆泄漏的发现
 - [Wiz 下游影响分析](https://www.wiz.io/blog/php2shell-php-rce)
 - [Corelight 检测方案](https://github.com/corelight/php2shell-detect) —— Zeek + Suricata 社区规则
+- [Wiz 利用分析](https://www.wiz.io/blog/php2shell-exploitation-so-far) —— 蜜罐数据、修复进度
+- [ELLIO 传感器数据](https://ellio.tech/en/blog/php2shell-what-we-observed-and-what-to-do/) —— 首次发现时间线、payload 观察
+- [VulnCheck exploit](https://www.vulncheck.com/blog/php2shell-vulnerabilities) —— 生产配置 ASLR 绕过
+- [Nokia Deepfield Potassium](https://github.com/deepfield/public-research/tree/main/potassium) —— Mirai 变种 botnet 分析
+- [社区 EOL 补丁回移（PHP 5.4–8.1）](https://github.com/Anton-Barinov/php2shell-patches) —— 经生产验证的补丁、部署工具和验证套件
 
 ## 免责声明
 
